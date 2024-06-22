@@ -14,6 +14,7 @@
             max-width: 800px;
             margin: auto;
             padding: 20px;
+            position: relative;
         }
         header {
             text-align: center;
@@ -47,6 +48,53 @@
             margin-right: 10px;
             font-size: 1.5em;
         }
+        .image-section {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .image-section img {
+            max-width: 100%;
+            height: auto;
+        }
+        .toolbar {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toolbar button {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #color-picker {
+            display: none;
+            position: absolute;
+            right: 10px;
+            top: 50px;
+            background: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            padding: 10px;
+        }
+        #color-picker button {
+            display: block;
+            margin: 5px 0;
+            width: 100%;
+        }
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* This allows the underlying content to be clickable */
+        }
+        #canvas.active {
+            pointer-events: auto; /* Enables drawing on the canvas */
+        }
     </style>
 </head>
 <body>
@@ -69,5 +117,94 @@
             <li><a href="https://github.com/saladpalad" target="_blank"><i class="fab fa-github"></i>github</a></li>
         </ul>
     </section>
+
+    <section class="image-section">
+        <img src="bert.png" alt="Description of the image">
+    </section>
+
+    <canvas id="canvas"></canvas>
+
+    <div class="toolbar">
+        <button id="draw"><i class="fas fa-pencil-alt"></i></button>
+        <div id="color-picker">
+            <button data-color="black" style="background: black;"></button>
+            <button data-color="red" style="background: red;"></button>
+            <button data-color="blue" style="background: blue;"></button>
+            <button data-color="green" style="background: green;"></button>
+            <button data-color="yellow" style="background: yellow;"></button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const toolbar = document.querySelector('.toolbar');
+        const colorPicker = document.getElementById('color-picker');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let drawing = false;
+        let erasing = false;
+        let currentColor = 'black';
+
+        const clearDrawing = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        };
+
+        let clearTimeoutId;
+        const scheduleClear = () => {
+            if (clearTimeoutId) clearTimeout(clearTimeoutId);
+            clearTimeoutId = setTimeout(clearDrawing, 3000);
+        };
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (!canvas.classList.contains('active')) return;
+            drawing = true;
+            ctx.beginPath();
+            ctx.moveTo(e.clientX, e.clientY);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!canvas.classList.contains('active')) return;
+            if (drawing) {
+                ctx.lineTo(e.clientX, e.clientY);
+                ctx.strokeStyle = currentColor;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                scheduleClear();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            drawing = false;
+        });
+
+        document.getElementById('draw').addEventListener('click', () => {
+            canvas.classList.add('active');
+            colorPicker.style.display = 'block';
+        });
+
+        colorPicker.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                currentColor = e.target.getAttribute('data-color');
+                colorPicker.style.display = 'none';
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx.putImageData(imgData, 0, 0);
+        });
+
+        // To deactivate the canvas and allow interacting with the underlying content
+        window.addEventListener('click', (e) => {
+            if (!toolbar.contains(e.target)) {
+                canvas.classList.remove('active');
+                colorPicker.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>
